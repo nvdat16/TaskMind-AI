@@ -30,6 +30,3 @@ backend/htmlcov/
 
 # Logs
 *.log
-
-# CICD
-.github/
