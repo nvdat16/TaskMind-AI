@@ -1,0 +1,537 @@
+DỰ ÁN: AI AGENT QUẢN LÝ CÔNG VIỆC CÁ NHÂN
+
+Mục tiêu tổng quát
+- Xây dựng một AI Agent hỗ trợ quản lý công việc cá nhân theo hướng thực tế, dễ mở rộng và có thể dùng hằng ngày.
+- Agent cần hỗ trợ: tạo việc, phân loại ưu tiên, nhắc việc, theo dõi tiến độ, gợi ý lịch làm việc, tổng hợp báo cáo ngày/tuần.
+- Hệ thống nên thiết kế theo kiểu module để về sau có thể tích hợp lịch, email, Telegram, Slack hoặc app mobile.
+
+==================================================
+1. GIAI ĐOẠN KHỞI ĐỘNG DỰ ÁN
+==================================================
+
+1.1. Xác định bài toán
+- Người dùng hiện đang quản lý công việc như thế nào: ghi sổ, dùng Notion, Google Calendar, Todoist, Excel hay chỉ nhớ trong đầu.
+- Các vấn đề chính cần giải quyết:
+  + Hay quên việc.
+  + Không biết ưu tiên việc nào trước.
+  + Công việc cá nhân và công việc công ty bị trộn lẫn.
+  + Không theo dõi được tiến độ lâu dài.
+  + Không có nhắc việc thông minh.
+- Xác định kết quả mong muốn của AI Agent:
+  + Mỗi sáng gợi ý danh sách việc quan trọng.
+  + Trong ngày nhắc đúng thời điểm.
+  + Cuối ngày tổng hợp những gì đã làm và việc nào bị trễ.
+  + Có thể trò chuyện tự nhiên để thêm/sửa/xóa công việc.
+
+1.2. Xác định phạm vi phiên bản đầu tiên (MVP)
+- Chỉ tập trung vào các tính năng cốt lõi:
+  + Đăng nhập hoặc tài khoản đơn giản.
+  + Tạo/sửa/xóa công việc.
+  + Gắn mức ưu tiên: cao, trung bình, thấp.
+  + Gắn deadline.
+  + Đánh dấu trạng thái: chưa làm, đang làm, hoàn thành, hoãn.
+  + Chat với AI để hỏi: “Hôm nay tôi nên làm gì?”, “Việc nào gấp nhất?”.
+  + Tạo nhắc việc cơ bản.
+- Chưa làm ngay ở MVP:
+  + Tích hợp nhiều nền tảng cùng lúc.
+  + Voice assistant.
+  + Phân tích năng suất quá sâu.
+  + Đồng bộ nhiều thiết bị phức tạp.
+
+1.3. Xác định nhóm người dùng mục tiêu
+- Cá nhân đi làm văn phòng.
+- Freelancer.
+- Sinh viên.
+- Người làm nhiều dự án cùng lúc.
+- Giai đoạn đầu nên chọn 1 nhóm chính, ví dụ: người đi làm cá nhân cần quản lý việc hằng ngày.
+
+==================================================
+2. THIẾT KẾ YÊU CẦU SẢN PHẨM
+==================================================
+
+2.1. Use cases chính
+- Người dùng nhập công việc mới bằng form hoặc chat.
+- AI tự phân tích nội dung công việc và gợi ý:
+  + ưu tiên,
+  + deadline hợp lý,
+  + thời lượng ước tính,
+  + phân loại công việc.
+- Người dùng xem dashboard công việc hôm nay.
+- AI nhắc việc gần tới hạn.
+- AI đề xuất lịch làm việc theo thời gian rảnh.
+- Cuối ngày AI tạo báo cáo ngắn.
+
+2.2. Yêu cầu chức năng
+- Quản lý tài khoản người dùng.
+- CRUD task.
+- Tag/category: cá nhân, công việc, sức khỏe, học tập, tài chính...
+- Reminder/notification.
+- AI chat assistant.
+- Task prioritization.
+- Daily summary.
+- Weekly review.
+- Search và filter task.
+
+2.3. Yêu cầu phi chức năng
+- Phản hồi nhanh.
+- Dễ dùng trên desktop trước, mobile sau.
+- Dữ liệu an toàn.
+- Có thể mở rộng số lượng task và số lượng người dùng.
+- Cấu trúc code rõ ràng, tách frontend/backend/AI layer.
+
+==================================================
+3. LỰA CHỌN CÔNG NGHỆ
+==================================================
+
+3.1. Frontend
+Gợi ý:
+- Web app: React hoặc Next.js.
+- UI library: Tailwind CSS + shadcn/ui hoặc Material UI.
+- Ưu tiên Next.js nếu muốn có cả UI và API route đơn giản.
+
+3.2. Backend
+Gợi ý:
+- Node.js với NestJS hoặc Express.
+- Hoặc Python với FastAPI nếu ưu tiên AI và xử lý dữ liệu.
+- Nếu muốn làm AI Agent tốt, Python + FastAPI là lựa chọn mạnh.
+
+3.3. Database
+Gợi ý:
+- PostgreSQL cho dữ liệu chính.
+- Redis nếu cần queue, cache, scheduler nhanh.
+- ORM: Prisma (Node.js) hoặc SQLAlchemy (Python).
+
+3.4. AI/LLM Layer
+- Dùng OpenAI API hoặc model tương đương.
+- Tách riêng lớp AI service để dễ thay model.
+- Có prompt template cho từng tác vụ:
+  + phân loại task,
+  + xếp ưu tiên,
+  + tóm tắt ngày,
+  + đề xuất lịch.
+
+3.5. Notification & Scheduling
+- Cron jobs hoặc scheduler nền.
+- Tích hợp email, Telegram bot, hoặc push notification.
+- Ở MVP có thể dùng email hoặc Telegram trước.
+
+3.6. Deployment
+- Frontend: Vercel hoặc Netlify.
+- Backend: Render, Railway, Fly.io hoặc VPS.
+- Database: Supabase, Neon hoặc PostgreSQL managed.
+
+==================================================
+4. THIẾT KẾ KIẾN TRÚC HỆ THỐNG
+==================================================
+
+4.1. Các module chính
+- Auth Module.
+- Task Management Module.
+- AI Recommendation Module.
+- Notification Module.
+- Reporting Module.
+- Integration Module.
+
+4.2. Luồng tổng quát
+- Người dùng tạo task.
+- Backend lưu task vào database.
+- AI service phân tích task và trả về:
+  + priority,
+  + suggested duration,
+  + suggested category,
+  + reminder time.
+- Scheduler kiểm tra deadline và gửi nhắc việc.
+- Dashboard hiển thị trạng thái mới nhất.
+- Cuối ngày report service tổng hợp dữ liệu và AI tạo bản tóm tắt.
+
+4.3. Kiến trúc dữ liệu cơ bản
+Bảng users
+- id
+- name
+- email
+- password_hash
+- timezone
+- created_at
+- updated_at
+
+Bảng tasks
+- id
+- user_id
+- title
+- description
+- category
+- priority
+- status
+- due_date
+- estimated_minutes
+- reminder_at
+- source_type
+- ai_generated_metadata
+- created_at
+- updated_at
+
+Bảng task_logs
+- id
+- task_id
+- action_type
+- old_value
+- new_value
+- created_at
+
+Bảng daily_reports
+- id
+- user_id
+- report_date
+- summary_text
+- productivity_score
+- created_at
+
+==================================================
+5. THIẾT KẾ AI AGENT
+==================================================
+
+5.1. Vai trò của agent
+- Hiểu yêu cầu ngôn ngữ tự nhiên từ người dùng.
+- Chuyển yêu cầu thành hành động hệ thống.
+- Đưa ra gợi ý quản lý công việc.
+- Theo dõi lịch sử để cá nhân hóa dần.
+
+5.2. Các năng lực chính của agent
+- Intent detection:
+  + thêm task,
+  + cập nhật task,
+  + hỏi việc hôm nay,
+  + hỏi báo cáo,
+  + xin lời khuyên sắp xếp công việc.
+- Entity extraction:
+  + tên task,
+  + deadline,
+  + mức ưu tiên,
+  + thời lượng,
+  + ngữ cảnh.
+- Reasoning:
+  + task nào gấp,
+  + task nào quan trọng,
+  + nên làm thứ tự nào.
+- Response generation:
+  + trả lời ngắn gọn,
+  + có tính hành động,
+  + không nói quá chung chung.
+
+5.3. Ví dụ luồng agent
+Input người dùng:
+- “Ngày mai tôi cần chuẩn bị slide họp lúc 9h sáng và nhớ gọi điện cho mẹ buổi tối.”
+
+Agent xử lý:
+- Tách thành 2 task.
+- Xác định task 1 là công việc, ưu tiên cao, deadline trước 9h ngày mai.
+- Xác định task 2 là cá nhân, reminder buổi tối.
+- Lưu vào database.
+- Phản hồi cho người dùng bằng ngôn ngữ tự nhiên.
+
+5.4. Prompt design
+Cần có các prompt riêng:
+- Prompt phân loại task.
+- Prompt gợi ý ưu tiên.
+- Prompt daily planner.
+- Prompt weekly review.
+- Prompt tạo câu trả lời ngắn gọn, rõ ràng, không bịa thông tin.
+
+5.5. Guardrails cho agent
+- Không tự xóa dữ liệu nếu không có xác nhận.
+- Không tự thay đổi deadline quan trọng nếu chưa hỏi lại người dùng.
+- Ghi log mọi hành động AI tạo ra.
+- Luôn phân biệt “gợi ý” và “hành động đã thực hiện”.
+
+==================================================
+6. THIẾT KẾ GIAO DIỆN
+==================================================
+
+6.1. Màn hình chính
+- Dashboard hôm nay.
+- Danh sách task theo trạng thái.
+- Khu vực chat với AI Agent.
+- Thanh lọc theo category, priority, deadline.
+
+6.2. Các màn hình cần có
+- Đăng nhập/đăng ký.
+- Dashboard.
+- Task detail.
+- Lịch công việc.
+- Settings.
+- Report ngày/tuần.
+
+6.3. Nguyên tắc UX
+- Thêm task thật nhanh.
+- AI suggestion hiển thị rõ ràng, dễ chấp nhận hoặc chỉnh sửa.
+- Không nhồi quá nhiều biểu đồ ở MVP.
+- Tập trung vào hành động: thêm việc, xem việc, làm việc, hoàn thành việc.
+
+==================================================
+7. KẾ HOẠCH PHÁT TRIỂN THEO GIAI ĐOẠN
+==================================================
+
+Giai đoạn 1: Phân tích và thiết kế
+- Viết tài liệu yêu cầu.
+- Vẽ user flow.
+- Vẽ sơ đồ database.
+- Chốt stack công nghệ.
+- Chốt phạm vi MVP.
+
+Giai đoạn 2: Setup project
+- Tạo repo.
+- Khởi tạo frontend.
+- Khởi tạo backend.
+- Cấu hình database.
+- Cấu hình môi trường dev, staging, production.
+- Tạo file .env.example.
+- Thiết lập lint, format, commit convention.
+
+Giai đoạn 3: Xây backend cốt lõi
+- Auth API.
+- Task CRUD API.
+- Category/priority/status API.
+- Reminder scheduler.
+- Logging.
+
+Giai đoạn 4: Xây AI layer
+- Tạo service gọi LLM.
+- Xây prompt templates.
+- Xây parser cho input chat.
+- Tạo action mapping từ chat sang thao tác hệ thống.
+- Gắn logging cho AI decision.
+
+Giai đoạn 5: Xây frontend
+- Tạo dashboard.
+- Tạo task list và task detail.
+- Tạo chat panel.
+- Tạo report page.
+- Kết nối frontend với API.
+
+Giai đoạn 6: Tích hợp notification
+- Email hoặc Telegram reminder.
+- Daily summary mỗi tối.
+- Weekly review mỗi cuối tuần.
+
+Giai đoạn 7: Test và tối ưu
+- Unit test.
+- Integration test.
+- E2E test.
+- Test prompt quality.
+- Test các case nhập liệu tiếng Việt tự nhiên.
+
+Giai đoạn 8: Triển khai production
+- Deploy frontend.
+- Deploy backend.
+- Deploy database.
+- Cấu hình domain, SSL.
+- Theo dõi logs và lỗi runtime.
+
+Giai đoạn 9: Cải tiến sau MVP
+- Tích hợp Google Calendar.
+- Đồng bộ mobile.
+- Voice input.
+- AI học theo thói quen người dùng.
+- Phân tích năng suất nâng cao.
+
+==================================================
+8. KẾ HOẠCH CHI TIẾT CÔNG VIỆC THỰC HIỆN
+==================================================
+
+8.1. Tuần 1
+- Xác định yêu cầu.
+- Viết PRD đơn giản.
+- Chọn stack.
+- Vẽ database schema.
+- Vẽ giao diện sơ bộ.
+
+8.2. Tuần 2
+- Setup repo frontend/backend.
+- Setup database.
+- Xây auth cơ bản.
+- Xây model task.
+- Tạo API CRUD task.
+
+8.3. Tuần 3
+- Tạo dashboard task.
+- Tạo form thêm/sửa task.
+- Tạo filter/search.
+- Hoàn thiện luồng task cơ bản.
+
+8.4. Tuần 4
+- Tích hợp AI chat.
+- Tạo chức năng hiểu yêu cầu ngôn ngữ tự nhiên.
+- Thử nghiệm phân loại task tự động.
+
+8.5. Tuần 5
+- Tạo reminder scheduler.
+- Gửi thông báo.
+- Tạo daily summary.
+
+8.6. Tuần 6
+- Test tổng thể.
+- Sửa lỗi UX/UI.
+- Tối ưu prompt.
+- Chuẩn bị deploy.
+
+==================================================
+9. CHI TIẾT CHỨC NĂNG NÊN XÂY
+==================================================
+
+9.1. Quản lý task
+- Thêm task bằng tay.
+- Thêm task bằng chat.
+- Sửa/xóa task.
+- Gắn tag.
+- Chia độ ưu tiên.
+- Đánh dấu hoàn thành.
+
+9.2. Smart prioritization
+- Dựa trên deadline.
+- Dựa trên độ quan trọng do người dùng thiết lập.
+- Dựa trên lịch sử trì hoãn.
+- Dựa trên thời lượng còn lại trong ngày.
+
+9.3. Smart planning
+- Gợi ý 3 việc quan trọng nhất hôm nay.
+- Gợi ý thời gian làm deep work.
+- Chia task lớn thành subtask.
+- Cảnh báo quá tải khi có quá nhiều việc trong 1 ngày.
+
+9.4. Báo cáo và phân tích
+- Số việc hoàn thành mỗi ngày.
+- Tỷ lệ trễ deadline.
+- Nhóm việc thường trì hoãn.
+- Gợi ý cải thiện năng suất.
+
+==================================================
+10. TESTING
+==================================================
+
+10.1. Unit test
+- Test tạo task.
+- Test update trạng thái.
+- Test tính ưu tiên.
+- Test parser input tiếng Việt.
+
+10.2. Integration test
+- Từ chat input -> AI parser -> backend action -> lưu DB.
+- Từ scheduler -> gửi notification.
+- Từ tổng hợp dữ liệu -> AI summary.
+
+10.3. E2E test
+- User đăng nhập.
+- User thêm task.
+- User hỏi AI “hôm nay làm gì?”.
+- User nhận reminder.
+- User xem báo cáo cuối ngày.
+
+10.4. Test AI quality
+- Độ chính xác nhận diện ý định.
+- Độ chính xác bóc tách thời gian.
+- Độ hữu ích của đề xuất.
+- Tính ổn định khi input mơ hồ.
+
+==================================================
+11. BẢO MẬT VÀ DỮ LIỆU
+==================================================
+
+- Mã hóa mật khẩu.
+- Bảo vệ API bằng token/session.
+- Không ghi log dữ liệu nhạy cảm không cần thiết.
+- Có cơ chế backup database.
+- Nếu dùng AI API ngoài, cần kiểm soát dữ liệu gửi lên.
+- Có chính sách quyền riêng tư rõ ràng nếu phát hành cho người khác dùng.
+
+==================================================
+12. DEPLOY VÀ VẬN HÀNH
+==================================================
+
+12.1. Chuẩn bị trước deploy
+- Kiểm tra biến môi trường.
+- Kiểm tra migrate database.
+- Kiểm tra build frontend.
+- Kiểm tra API production.
+- Kiểm tra luồng nhắc việc.
+
+12.2. Sau deploy
+- Theo dõi logs.
+- Theo dõi lỗi AI response.
+- Theo dõi tỷ lệ người dùng hoàn thành task.
+- Thu thập feedback thực tế.
+
+12.3. Chỉ số nên theo dõi
+- DAU/WAU.
+- Số task được tạo mỗi ngày.
+- Tỷ lệ task hoàn thành.
+- Tỷ lệ sử dụng chat AI.
+- Tỷ lệ reminder được tương tác.
+
+==================================================
+13. RỦI RO CẦN LƯU Ý
+==================================================
+
+- AI hiểu sai yêu cầu tiếng Việt tự nhiên.
+- Deadline bị parse sai giờ/ngày.
+- Notification gửi sai thời điểm do timezone.
+- Quá phụ thuộc LLM dẫn đến chi phí cao.
+- Luồng chat quá tự do gây khó kiểm soát hành động.
+
+Cách giảm rủi ro:
+- Luôn xác nhận với các thao tác quan trọng.
+- Có fallback rule-based cho các trường phổ biến.
+- Log toàn bộ prompt/output nội bộ để debug.
+- Viết test cho các câu nhập phổ biến bằng tiếng Việt.
+
+==================================================
+14. ĐỊNH HƯỚNG MỞ RỘNG TƯƠNG LAI
+==================================================
+
+- Tích hợp Google Calendar và Outlook.
+- Đồng bộ với Notion/Todoist/Trello.
+- AI coach cá nhân hóa theo thói quen làm việc.
+- Gamification: điểm thưởng, streak hoàn thành việc.
+- Voice assistant tiếng Việt.
+- Phân tích thời gian làm việc theo biểu đồ.
+- Gợi ý kế hoạch tuần/tháng tự động.
+
+==================================================
+15. ĐẦU RA CẦN CÓ SAU KHI KẾT THÚC GIAI ĐOẠN MVP
+==================================================
+
+- 1 web app có thể đăng nhập.
+- Có dashboard quản lý task cá nhân.
+- Có thể tạo/sửa/xóa task.
+- Có AI chat để thêm việc và hỏi gợi ý công việc hôm nay.
+- Có reminder cơ bản.
+- Có báo cáo cuối ngày.
+- Có bản deploy chạy ổn định.
+- Có tài liệu kỹ thuật và hướng dẫn sử dụng.
+
+==================================================
+16. GỢI Ý THỨ TỰ LÀM THỰC TẾ TỐI ƯU
+==================================================
+
+Bước 1: Chốt yêu cầu MVP.
+Bước 2: Chọn stack công nghệ.
+Bước 3: Thiết kế database và API.
+Bước 4: Xây task management trước, chưa cần AI.
+Bước 5: Khi CRUD ổn định mới tích hợp AI chat.
+Bước 6: Bổ sung reminder và report.
+Bước 7: Test kỹ input tiếng Việt.
+Bước 8: Deploy sớm để dùng thử thật.
+Bước 9: Ghi lại feedback và cải tiến theo hành vi thực tế.
+
+==================================================
+17. KẾT LUẬN
+==================================================
+
+Đây là một dự án rất phù hợp để phát triển theo hướng sản phẩm AI thực tế. Cách làm tốt nhất là bắt đầu từ một hệ thống quản lý task đơn giản nhưng chắc chắn, sau đó thêm AI như một lớp thông minh ở phía trên. Không nên làm AI quá sớm khi phần dữ liệu, workflow và trải nghiệm cơ bản còn chưa ổn định.
+
+Ưu tiên đúng:
+- Task system trước.
+- AI support sau.
+- Reminder và report tiếp theo.
+- Tối ưu trải nghiệm người dùng liên tục.
+
+Nếu triển khai đúng thứ tự, dự án sẽ nhanh có phiên bản dùng được thật và dễ mở rộng thành một trợ lý cá nhân thông minh hoàn chỉnh trong tương lai.
