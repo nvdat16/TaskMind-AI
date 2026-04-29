@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     app_env: str = Field(default="development")
     app_debug: bool = Field(default=True)
     api_v1_prefix: str = Field(default="/api/v1")
+    access_token_expire_minutes: int = Field(default=60 * 24)
+    secret_key: str = Field(default="change-this-secret-in-env")
+    jwt_algorithm: str = Field(default="HS256")
+    default_reminder_minutes: int = Field(default=30)
 
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/ai_agents"
@@ -16,6 +20,8 @@ class Settings(BaseSettings):
 
     llm_api_key: str = Field(default="")
     llm_model: str = Field(default="gpt-4.1-mini")
+    llm_base_url: str = Field(default="https://api.openai.com/v1")
+    llm_timeout_seconds: float = Field(default=30.0)
 
     cors_origins: list[str] = Field(default=["http://localhost:3000"])
 
