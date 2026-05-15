@@ -47,5 +47,5 @@ class ChatResponse(AppBaseSchema):
     reply: str
     intent: ChatIntent = "unknown"
     needs_confirmation: bool = False
-    missing_fields: list[str] = []
+    missing_fields: list[str] = Field(default_factory=list)
     parsed_task: ParsedTaskData | None = None

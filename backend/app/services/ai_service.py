@@ -1,18 +1,21 @@
 from __future__ import annotations
 
-import json
+import logging
 from typing import Any
 
 import httpx
 
 from app.core.config import get_settings
-from app.schemas.chat import ChatResponse, ParsedTaskData
+from app.models.chat_message import ChatMessage
+from app.models.user import User
+from app.schemas.chat import ChatResponse
+from app.services.ai_action_mapper import AIActionMapper
+from app.services.ai_errors import AIServiceError
+from app.services.ai_parser import parse_chat_response
+from app.services.ai_prompts import AIPromptTemplates
 
 settings = get_settings()
-
-
-class AIServiceError(Exception):
-    pass
+logger = logging.getLogger(__name__)
 
 
 class AIService:
@@ -27,67 +30,28 @@ class AIService:
         }
 
     @staticmethod
-    def _build_task_extraction_prompt(message: str) -> str:
-        return f"""
-You are an AI assistant for a personal task manager.
-Extract the user's intent and task details from the message.
-Return valid JSON only with this exact shape:
-{{
-  "reply": "short Vietnamese reply",
-  "intent": "create_task|update_task|delete_task|list_tasks|plan_today|daily_summary|unknown",
-  "needs_confirmation": true,
-  "missing_fields": ["field_name"],
-  "parsed_task": {{
-    "title": "string or null",
-    "description": "string or null",
-    "category": "string or null",
-    "priority": "low|medium|high|urgent|null",
-    "due_at": "ISO datetime string or null",
-    "reminder_at": "ISO datetime string or null"
-  }}
-}}
-
-Rules:
-- Reply in Vietnamese.
-- If time/date is ambiguous, set needs_confirmation=true.
-- If no task can be extracted, set intent="unknown".
-- Do not include markdown fences.
-
-User message: {message}
-""".strip()
+    def _build_task_extraction_messages(message: str) -> list[dict[str, str]]:
+        return [
+            {
+                "role": "system",
+                "content": AIPromptTemplates.task_extraction_system_prompt(),
+            },
+            {
+                "role": "user",
+                "content": AIPromptTemplates.task_extraction_user_prompt(message),
+            },
+        ]
 
     @classmethod
     def _parse_response_content(cls, content: str) -> ChatResponse:
-        try:
-            payload = json.loads(content)
-        except json.JSONDecodeError as exc:
-            raise AIServiceError("LLM returned invalid JSON") from exc
-
-        parsed_task_raw = payload.get("parsed_task")
-        parsed_task = (
-            ParsedTaskData.model_validate(parsed_task_raw) if parsed_task_raw else None
-        )
-
-        return ChatResponse(
-            reply=payload.get("reply", "Tôi chưa hiểu yêu cầu của bạn."),
-            intent=payload.get("intent", "unknown"),
-            needs_confirmation=payload.get("needs_confirmation", False),
-            missing_fields=payload.get("missing_fields", []),
-            parsed_task=parsed_task,
-        )
+        return parse_chat_response(content)
 
     @classmethod
     async def extract_task_from_message(cls, message: str) -> ChatResponse:
-        prompt = cls._build_task_extraction_prompt(message)
+        messages = cls._build_task_extraction_messages(message)
         request_body: dict[str, Any] = {
             "model": settings.llm_model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a precise information extraction assistant.",
-                },
-                {"role": "user", "content": prompt},
-            ],
+            "messages": messages,
             "temperature": 0.2,
         }
 
@@ -110,3 +74,52 @@ User message: {message}
             raise AIServiceError("Unexpected LLM response structure") from exc
 
         return cls._parse_response_content(content)
+
+    @classmethod
+    async def process_chat_message(
+        cls,
+        db,
+        user: User,
+        message: str,
+        conversation_id: str | None = None,
+    ) -> ChatResponse:
+        user_message = ChatMessage(
+            user_id=user.id,
+            role="user",
+            message_text=message,
+            intent=None,
+            structured_data={"conversation_id": conversation_id},
+        )
+        db.add(user_message)
+        db.commit()
+        db.refresh(user_message)
+
+        extracted = await cls.extract_task_from_message(message)
+        action_result = AIActionMapper.execute(db=db, user=user, response=extracted)
+
+        assistant_message = ChatMessage(
+            user_id=user.id,
+            role="assistant",
+            message_text=action_result.response.reply,
+            intent=action_result.response.intent,
+            structured_data={
+                "conversation_id": conversation_id,
+                "extracted": extracted.model_dump(mode="json"),
+                "action_name": action_result.action_name,
+                "action_metadata": action_result.metadata,
+                "task_id": str(action_result.task.id) if action_result.task else None,
+            },
+        )
+        db.add(assistant_message)
+        db.commit()
+        db.refresh(assistant_message)
+
+        logger.info(
+            "AI chat processed user_id=%s intent=%s action=%s task_id=%s",
+            user.id,
+            extracted.intent,
+            action_result.action_name,
+            action_result.task.id if action_result.task else None,
+        )
+
+        return action_result.response
